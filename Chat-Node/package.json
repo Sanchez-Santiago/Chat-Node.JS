@@ -1,0 +1,21 @@
+{
+  "name": "chat-node",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "express": "5.1.0",
+    "morgan": "1.10.0",
+    "socket.io": "4.8.1"
+  },
+  "scripts": {
+    "start": "bun --watch run ./server/index.js",
+    "dev": "bun --watch run ./server/index.js"
+  }
+}
