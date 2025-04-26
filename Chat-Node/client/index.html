@@ -4,41 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat</title>
-    <script type="module">
-      import { io } from "https://cdn.socket.io/4.6.1/socket.io.esm.min.js";
-      const socket = io();
-
-      const form = document.getElementById("form");
-      const input = document.getElementById("input");
-      const messages = document.getElementById("messages");
-
-      socket.on("message", (message) => {
-        const itm = `<li>${message}</li>`;
-        messages.insertAdjacentHTML("beforeend", itm);
-      });
-
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        if (input.value) {
-          socket.emit("message", input.value);
-          input.value = "";
-        }
-      });
-    </script>
-  </head>
-  <body>
-    <section id="chat">
-      <ul id="messages"></ul>
-      <form action="" id="form">
-        <input
-          type="text"
-          name="message"
-          id="input"
-          placeholder="Type your message..."
-        />
-        <button type="submit">Enviar</button>
-      </form>
-    </section>
     <style>
       *,
       *::before,
@@ -103,7 +68,103 @@
       }
 
       #messages {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        overflow: scroll;
+        height: 100%;
+        scroll-behavior: smooth;
+        padding-bottom: 48px;
+      }
+
+      #messages > li {
+        padding: 0.5rem 1rem;
+      }
+
+      #messages > li:nth-child(odd) {
+        background-color: #78797a;
       }
     </style>
+  </head>
+  <body>
+    <section id="chat">
+      <ul id="messages"></ul>
+      <form action="" id="form">
+        <input
+          type="text"
+          name="message"
+          id="input"
+          placeholder="Type your message..."
+        />
+        <button type="submit">Enviar</button>
+      </form>
+    </section>
+
+    <script type="module">
+      import { io } from "https://cdn.socket.io/4.6.1/socket.io.esm.min.js";
+
+      // Variables globales
+      let serverOffset = 0;
+
+      // Elementos del DOM
+      const form = document.getElementById("form");
+      const input = document.getElementById("input");
+      const messages = document.getElementById("messages");
+
+      // Obtener nombre de usuario
+      const getUserName = async () => {
+        const userName = localStorage.getItem("userName");
+        if (userName) return userName;
+
+        const res = await fetch(
+          "https://random-data-api.com/api/users/random_user"
+        );
+        const data = await res.json();
+        const newUserName =
+          data.username || `User${Math.floor(Math.random() * 1000)}`;
+
+        localStorage.setItem("userName", newUserName);
+        return newUserName;
+      };
+
+      // Configurar Socket.IO
+      const socket = io({
+        auth: {
+          username: await getUserName(),
+          serverOffset: 0,
+        },
+      });
+
+      // Manejar mensajes entrantes
+      socket.on("message", (message, newOffset, userName) => {
+        const item = document.createElement("li");
+        item.innerHTML = `
+          <p>${message}</p>
+          <small>${userName}</small>
+        `;
+        messages.appendChild(item);
+        serverOffset = newOffset;
+        messages.scrollTop = messages.scrollHeight;
+        message.scrollTop = message.scrollHeight;
+      });
+
+      // Enviar mensajes
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (input.value.trim()) {
+          socket.emit("message", input.value.trim());
+          input.value = "";
+        }
+      });
+
+      // Mostrar feedback de conexión
+      socket.on("connect", () => {
+        console.log("Conectado al servidor");
+      });
+
+      socket.on("disconnect", () => {
+        console.log("Desconectado del servidor");
+      });
+    </script>
   </body>
 </html>
